@@ -7,11 +7,7 @@
 
 package org.usfirst.frc.team4229.robot;
 
-import edu.wpi.first.wpilibj.IterativeRobot;
-import org.usfirst.frc.team4229.robot.ADXRS453Gyro;
-//import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.*;
-//import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -22,18 +18,11 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * creating this project, you must also update the build.properties file in the
  * project.
  */
-public class Robot extends IterativeRobot {
+public class Robot extends TimedRobot {
 	private static final String kDefaultAuto = "Default";
 	private static final String kCustomAuto = "My Auto";
 	private String m_autoSelected;
 	private SendableChooser<String> m_chooser = new SendableChooser<>();
-	RobotDrive drive;
-	Joystick left, right;
-	Talon elevator;
-	double speed;
-	ADXRS453Gyro gyro;
-	PIDController gyroPID;
-	
 
 	/**
 	 * This function is run when the robot is first started up and should be
@@ -44,19 +33,6 @@ public class Robot extends IterativeRobot {
 		m_chooser.addDefault("Default Auto", kDefaultAuto);
 		m_chooser.addObject("My Auto", kCustomAuto);
 		SmartDashboard.putData("Auto choices", m_chooser);
-		drive=new RobotDrive(0,1);
-		left = new Joystick(0);
-		right = new Joystick(1);
-		elevator = new Talon(2);
-		speed = 0;
-		gyro = new ADXRS453Gyro();
-		gyro.startThread();
-		gyro.calibrate();
-		
-		SmartDashboard.putNumber("P", 0);
-		SmartDashboard.putNumber("I", 0);
-		SmartDashboard.putNumber("D", 0);
-		
 	}
 
 	/**
@@ -73,8 +49,8 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousInit() {
 		m_autoSelected = m_chooser.getSelected();
-		// autoSelected = SmartDashboard.getString("Auto Selector",
-		// defaultAuto);
+		// m_autoSelected = SmartDashboard.getString("Auto Selector",
+		// 		kDefaultAuto);
 		System.out.println("Auto selected: " + m_autoSelected);
 	}
 
@@ -99,33 +75,6 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void teleopPeriodic() {
-		drive.tankDrive(left, right);
-		SmartDashboard.putNumber("left", left.getZ() );
-		speed = left.getZ();
-		SmartDashboard.putNumber("gyro", gyro.getAngle());
-		SmartDashboard.putNumber("GyroAngle", gyro.getAngle());
-		SmartDashboard.putNumber("GyroPos", gyro.getPos());
-		SmartDashboard.putNumber("GyroRate", gyro.getRate());
-		SmartDashboard.putNumber("GyroTemp", gyro.getTemp());
-		
-		if(left.getRawButton(1) == false) {
-			elevator.set(0);
-		
-		}
-		else {
-			elevator.set(speed);
-			
-			
-		}
-		
-	}
-	/**
-	 *  This function is called before test mode.
-	 */
-	
-	public void testInit(){
-		gyroPID = new PIDController(SmartDashboard.getNumber("P",0), SmartDashboard.getNumber("I", 0), SmartDashboard.getNumber("D", 0), null, elevator);
-		
 	}
 
 	/**
@@ -133,7 +82,5 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void testPeriodic() {
-		
-		SmartDashboard.getNumber("P", 0);
 	}
 }

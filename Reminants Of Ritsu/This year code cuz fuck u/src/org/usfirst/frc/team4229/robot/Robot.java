@@ -7,13 +7,15 @@
 
 package org.usfirst.frc.team4229.robot;
 
-import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+
 import org.usfirst.frc.team4229.robot.ADXRS453Gyro;
 //import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.*;
 //import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -27,14 +29,28 @@ public class Robot extends IterativeRobot {
 	private static final String kCustomAuto = "My Auto";
 	private String m_autoSelected;
 	private SendableChooser<String> m_chooser = new SendableChooser<>();
-	RobotDrive drive;
+	DifferentialDrive drive;
 	Joystick left, right;
 	Talon elevator;
+	Talon DriveR;
+	Talon DriveL;
 	double speed;
+	double topSpeed;
+	double P;
+	double I;
+	double D;
 	ADXRS453Gyro gyro;
-	PIDController gyroPID;
-	
+	PIDController turner;
 
+	public void turn(double speed){
+		drive.tankDrive(speed, -1*speed);
+		
+	}
+
+	
+	
+	
+	
 	/**
 	 * This function is run when the robot is first started up and should be
 	 * used for any initialization code.
@@ -44,18 +60,21 @@ public class Robot extends IterativeRobot {
 		m_chooser.addDefault("Default Auto", kDefaultAuto);
 		m_chooser.addObject("My Auto", kCustomAuto);
 		SmartDashboard.putData("Auto choices", m_chooser);
-		drive=new RobotDrive(0,1);
+		DriveR=new Talon(0);
+		DriveL=new Talon(1);
+		drive=new DifferentialDrive(DriveR, DriveL);
 		left = new Joystick(0);
 		right = new Joystick(1);
 		elevator = new Talon(2);
 		speed = 0;
+		topSpeed = 0;
 		gyro = new ADXRS453Gyro();
 		gyro.startThread();
 		gyro.calibrate();
-		
-		SmartDashboard.putNumber("P", 0);
+		SmartDashboard.putNumber("P", 0.01);
 		SmartDashboard.putNumber("I", 0);
 		SmartDashboard.putNumber("D", 0);
+		
 		
 	}
 
@@ -99,7 +118,8 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void teleopPeriodic() {
-		drive.tankDrive(left, right);
+		drive.tankDrive(left.getRawAxis(1)*topSpeed, right.getRawAxis(1)*topSpeed);
+		topSpeed = left.getZ()/2.0-0.5;
 		SmartDashboard.putNumber("left", left.getZ() );
 		speed = left.getZ();
 		SmartDashboard.putNumber("gyro", gyro.getAngle());
@@ -107,7 +127,25 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putNumber("GyroPos", gyro.getPos());
 		SmartDashboard.putNumber("GyroRate", gyro.getRate());
 		SmartDashboard.putNumber("GyroTemp", gyro.getTemp());
-		
+
+		/* If right trigger pulls up
+		 * if released stop the elevator
+		 * if left trigger, elevator down
+		 * if both triggers, ?
+		 * if at top don't go up
+		 * if at bottom don't go down
+		 * 
+		 * 
+		 * 
+		 * intakes
+		 * left button 3 take intakes
+		 * if released stop intaking
+		 * right button 3 to shoot
+		 * if released stop shooting
+		 * 
+		 * 
+		 * 
+		 */
 		if(left.getRawButton(1) == false) {
 			elevator.set(0);
 		
@@ -119,21 +157,61 @@ public class Robot extends IterativeRobot {
 		}
 		
 	}
-	/**
-	 *  This function is called before test mode.
-	 */
-	
-	public void testInit(){
-		gyroPID = new PIDController(SmartDashboard.getNumber("P",0), SmartDashboard.getNumber("I", 0), SmartDashboard.getNumber("D", 0), null, elevator);
-		
-	}
 
 	/**
 	 * This function is called periodically during test mode.
 	 */
+	
+	/**
+	 * PID controller stuff keep it disabled
+	 */
+	
+	@Override
+	public void testInit(){
+		P = SmartDashboard.getNumber("P", 0);
+		I = SmartDashboard.getNumber("I", 0);
+		D = SmartDashboard.getNumber("D", 0);
+		
+		SmartDashboard.putNumber("robotP", P);
+		SmartDashboard.putNumber("robotI", I);
+		SmartDashboard.putNumber("robotD", D);
+		
+		//(0.20, 0.000001, 0.3)
+		turner = new PIDController(P, I, D, gyro, new gyroPIDoutput());
+		gyro.reset();
+		turner.setSetpoint(90);
+		turner.enable();
+		
+		
+		
+	}
+	
+	
+	
+	
+	
 	@Override
 	public void testPeriodic() {
+		SmartDashboard.putNumber("GyroAngle", gyro.getAngle());
+		SmartDashboard.putNumber("GyroPos", gyro.getPos());
+		SmartDashboard.putNumber("GyroRate", gyro.getRate());
+		SmartDashboard.putNumber("GyroTemp", gyro.getTemp());
+		//SmartDashboard.putNumber("codep", P);
 		
-		SmartDashboard.getNumber("P", 0);
+		
+		
+		
+		
+	}
+	
+	public class gyroPIDoutput implements PIDOutput {
+		public void pidWrite(double output){
+			turn(output);
+			
+		}
+		
 	}
 }
+
+
+
